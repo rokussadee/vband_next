@@ -1,12 +1,18 @@
 // state.ts
 import { atom } from 'recoil';
 
+export interface MidiNote {
+  note: number,
+  velocity: number,
+  time: number
+}
+
 export const isRecordingState = atom<boolean>({
   key: 'isRecordingState',
   default: false,
 });
 
-export const midiNotesState = atom<Array<{ note: number; velocity: number }>>({
+export const midiNotesState = atom<Array<MidiNote>>({
   key: 'midiNotesState',
   default: [],
 });

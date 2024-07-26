@@ -4,7 +4,7 @@
 import React, { useEffect } from 'react';
 import { useSetRecoilState, useRecoilValue } from 'recoil';
 import { midiNotesState, isRecordingState } from '../lib/state';
-import { initMIDI } from '../services/MidiService';
+import { initMIDI } from '../services/ToneService';
 
 const MidiComponent: React.FC = () => {
   const setMidiNotes = useSetRecoilState(midiNotesState);

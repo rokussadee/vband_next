@@ -6,6 +6,7 @@ import MidiComponent from "./components/MidiComponent";
 import SettingsForm from "./components/SettingsForm";
 import InstrumentSelector from './components/InstrumentSelector';
 import Piano from "./components/Piano";
+import Timeline from "./components/Timeline";
 
 export default function Home() {
   const handleSaveSettings = (bpm: number, measures: number) => {
@@ -30,7 +31,11 @@ export default function Home() {
       <div className="flex row-auto">
         <Piano />
       </div>
+      <div>
+        <Timeline width={800} height={200} numBeatsPerMeasure={4} numMeasures={4}/>
+      </div>
 
     </main>
   );
 }
+ 
