@@ -1,11 +1,13 @@
 // state.ts
 import { atom } from 'recoil';
+import { MidiNote, Cursor, MidiLoop } from '../lib/types';
+import { Loop } from 'tone';
+import { BarsBeatsSixteenths } from 'tone/build/esm/core/type/Units';
 
-export interface MidiNote {
-  note: number,
-  velocity: number,
-  time: number
-}
+export const isPlayingState = atom<boolean>({
+  key: 'isPlayingState',
+  default: false,
+});
 
 export const isRecordingState = atom<boolean>({
   key: 'isRecordingState',
@@ -14,6 +16,11 @@ export const isRecordingState = atom<boolean>({
 
 export const midiNotesState = atom<Array<MidiNote>>({
   key: 'midiNotesState',
+  default: [],
+});
+
+export const activeNotesState = atom<Array<{note: number, start: BarsBeatsSixteenths}>>({
+  key: 'activeNotesState',
   default: [],
 });
 
@@ -30,4 +37,14 @@ export const measuresState = atom<number>({
 export const instrumentState = atom<string>({
   key: 'instrumentState',
   default: 'piano', // default instrument
+});
+
+export const loopsState = atom<Array<MidiLoop>>({
+  key: 'loopState',
+  default: [],
+});
+
+export const cursorState = atom<Cursor>({
+  key: 'cursorState',
+  default: { position: 0 },
 });
