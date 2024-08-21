@@ -100,7 +100,7 @@ export const startLoop = (
       const newCursor: Cursor = {position: transportTime.toSeconds() * (bpm/60)};
       setCursorPosition(newCursor);
     }, time)
-  }, `${loop.end - loop.start}m`);
+  }, `${Tone.Time(Tone.Time(loop.end).toSeconds() - Tone.Time(loop.start).toSeconds()).toBarsBeatsSixteenths()}m`);
   
   currentLoop.start(0);
   transport.start();
