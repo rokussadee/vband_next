@@ -37,12 +37,12 @@ const Piano: React.FC = () => {
       if (!prevPressedKeys.includes(key) && VALID_KEYS.includes(key)) {
         setActiveNotes((prevActiveNotes) => {
           const isAlreadyActive = prevActiveNotes.some(n => n.note === noteNumber);
-          console.log(`isAlreadyActive: ${isAlreadyActive}`);
+          //console.log(`isAlreadyActive: ${isAlreadyActive}`);
           
           if (!isAlreadyActive) {
             playSynthNote(note);
             const newActiveNotes = [...prevActiveNotes, { note: noteNumber, start: time }];
-            console.log(`activeNotes after adding: ${JSON.stringify(newActiveNotes)}`);
+            //console.log(`activeNotes after adding: ${JSON.stringify(newActiveNotes)}`);
             return newActiveNotes;
           }
 
@@ -64,8 +64,8 @@ const Piano: React.FC = () => {
 
     setActiveNotes((prevActiveNotes) => {
       const activeNote = prevActiveNotes.find(n => n.note === noteNumber);
-      console.log(`activeNote on keyUp: ${activeNote?.note}`);
-      console.log(`activeNotes before stopping: ${JSON.stringify(prevActiveNotes)}`);
+      //console.log(`activeNote on keyUp: ${activeNote?.note}`);
+      //console.log(`activeNotes before stopping: ${JSON.stringify(prevActiveNotes)}`);
 
       if (activeNote) {
         activeNoteToStop = {
@@ -76,7 +76,7 @@ const Piano: React.FC = () => {
         };
 
         const updatedActiveNotes = prevActiveNotes.filter(n => n.note !== noteNumber);
-        console.log(`activeNotes after stopping: ${JSON.stringify(updatedActiveNotes)}`);
+        //console.log(`activeNotes after stopping: ${JSON.stringify(updatedActiveNotes)}`);
         return updatedActiveNotes;
       }
 

@@ -20,9 +20,9 @@ const MidiBlock: React.FC<MidiBlockProps> = ({ loop }) => {
     >
       {loop.notes.map((note, index) => {
           const noteStartColumn = Tone.Time(note.start).toTicks();
-          console.log(`noteStartColumn: ${noteStartColumn}`);
+          //console.log(`noteStartColumn: ${noteStartColumn}`);
           const noteLengthInTicks = Tone.Time(note.length).toTicks();
-          console.log(`noteLengthInTicks: ${noteLengthInTicks}`);
+          //console.log(`noteLengthInTicks: ${noteLengthInTicks}`);
           const gridRow = note.note + 1;
           return (
             <div

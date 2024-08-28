@@ -23,14 +23,14 @@ const Key: React.FC<KeyProps> = ({ note, pressedKeys }) => {
 
   const keyClasses = `
     ${isFlat ? 'bg-black' : 'bg-white'}
-    border-2 border-black
+    border-2 border-black 
     ${isFlat ? 'relative ml-[-17px] mr-[-17px] h-60 w-10 z-2' : 'w-20 h-80'}
     ${isPressed ? 'bg-blue-400' : ''}
   `;
 
   const keyTextClasses = `
     ${isFlat ? 'text-white' : 'text-black'}
-    font-semibold text-3xl
+    font-semibold text-2xl flex justify-center
     ${isFlat ? 'absolute top-24 left-1/2 transform -translate-x-1/2' : 'relative mt-24'}
   `;
 
@@ -46,3 +46,4 @@ const Key: React.FC<KeyProps> = ({ note, pressedKeys }) => {
 };
 
 export default Key;
+

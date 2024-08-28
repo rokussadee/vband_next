@@ -13,15 +13,15 @@ const InstrumentSelector: React.FC = () => {
   };
 
   return (
-    <div>
-      <label htmlFor="instrument">Select Instrument: </label>
-      <select id="instrument" value={instrument} onChange={handleChange}>
-        <option value="piano">Piano</option>
-        <option value="synth">Synth</option>
-        <option value="guitar">Guitar</option>
-        {/* Add more options as needed */}
-      </select>
-    </div>
+    <div className='mb-2'>
+    <label htmlFor="instrument">Select Instrument: </label>
+    <select id="instrument" className='text-black font-bold' value={instrument} onChange={handleChange}>
+      <option className='font-bold' value="piano">Piano</option>
+      <option className='font-bold' value="synth">Synth</option>
+      <option className='font-bold' value="guitar">Guitar</option>
+      {/* Add more options as needed */}
+    </select>
+  </div>
   );
 };
 

@@ -4,7 +4,7 @@
 import React, {useState, useEffect} from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { isRecordingState, bpmState, measuresState, midiNotesState} from '../lib/state';
-import { initMIDI } from '../services/MidiService';
+import * as Tone from 'tone';
 
 const RecordingButton: React.FC = () => {
   const [isRecording, setIsRecording] = useRecoilState(isRecordingState);
@@ -12,6 +12,7 @@ const RecordingButton: React.FC = () => {
   const measures = useRecoilValue(measuresState);
   const [click, setClick] = useState<HTMLAudioElement | null>(null);
   const setMidiNotes = useRecoilState(midiNotesState)[1];
+  const transport = Tone.getTransport();
   
   useEffect(() => {
     const clickSound = new Audio('/rottus_rim_v2.wav'); // Ensure you have this file in your public directory
@@ -30,16 +31,24 @@ const RecordingButton: React.FC = () => {
 
   const startRecording = () => {
     setMidiNotes([]); // Clear previous notes
+    transport.stop(); // Stop the transport
+    transport.position = "0:0:0"; // Reset the transport position to "0:0:0"
+    
     playClick(4); // Play four preparatory clicks
 
     setTimeout(() => {
       setIsRecording(true);
-      setTimeout(() => setIsRecording(false), (60 / bpm) * measures * 4 * 1000); // Stop recording after the set number of measures
+      transport.start()
+      setTimeout(() => {
+         setIsRecording(false);
+         transport.stop();  
+      }, (60 / bpm) * measures * 4 * 1000); // Stop recording after the set number of measures
     }, (60 / bpm) * 4 * 1000); // Start recording after four preparatory clicks
   };
 
   const stopRecording = () => {
     setIsRecording(false);
+    transport.stop();
   };
 
   const toggleRecording = () => {
@@ -51,12 +60,13 @@ const RecordingButton: React.FC = () => {
   };
 
   return (
-    <div>
-      <button className="p-4 border-2 border-red-300 cursor-pointer hover:bg-white" onClick={toggleRecording}>
-        {isRecording ? 'Stop Recording' : 'Start Recording'}
-      </button>
-      <p>Recording state: {isRecording ? 'Recording' : 'Not Recording'}</p>
-    </div>
+    <div className='flex items-center'>
+    <p className='mr-6'>Recording state: <span className='font-semibold'>{isRecording ? 'Recording' : 'Not Recording'}</span></p>
+    <button className="pl-6 flex items-center pr-6 font-bold pt-2 pb-2 rounded-full text-neutral-50  bg-red-600 cursor-pointer hover:drop-shadow-lg" onClick={toggleRecording}>
+      {isRecording ? 'Stop Recording' : 'Start Recording'}
+      {isRecording ? <div className='p-2 bg-neutral-50 ml-2'></div> : <div className='p-2 ml-2 rounded-full bg-neutral-50'></div> }
+    </button>
+  </div>
   );
 };
 

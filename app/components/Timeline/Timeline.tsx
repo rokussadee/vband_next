@@ -1,11 +1,17 @@
-import {useEffect} from "react";
-import { cursorState, isPlayingState, loopsState, midiNotesState } from "../../lib/state";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import {useEffect, useState} from "react";
+import { cursorState, isPlayingState, loopsState, midiNotesState, isRecordingState, apiGeneratedLoopsState, openaiClientState, threadState, selectedMidiLoopState, bpmState, genreState, inputTimbreState, outputTimbreState, latestRunIDState} from "../../lib/state";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { Cursor, MidiNote, MidiLoop } from '../../lib/types';
 import { startLoop, stopLoop } from "../../services/ToneService";
 import * as Tone from 'tone';
+import OpanAI from 'openai';
 import MidiBlock from "../MidiBlock";
 import Playhead from "../Playhead";
+import { detectKey } from "../..//services/TonalService";
+import { MidiRequestPayload } from "@/app/lib/dto";
+import { createRun, generateBaseLoop, getMessages, pollRunStatus } from "@/app/services/MidiGenService";
+import { getOpenAIClient } from "@/app/lib/openaiClient";
+import { parseAssistantResponse } from "@/app/utils/midiParser";
 
 export interface TimelineProps {
 	width: number,
@@ -17,30 +23,105 @@ export interface TimelineProps {
 const Timeline: React.FC<TimelineProps> = ({width, height, numMeasures, numBeatsPerMeasure}) => {
 	const midiNotes = useRecoilValue<Array<MidiNote>>(midiNotesState);
 	const loops = useRecoilValue<Array<MidiLoop>>(loopsState);
+    const [apiGeneratedLoops, setApiGeneratedLoops] = useRecoilState<Array<MidiLoop>>(apiGeneratedLoopsState);
 	const cursor = useRecoilValue<Cursor>(cursorState);
 	const isPlaying = useRecoilValue<boolean>(isPlayingState);
+	const isRecording = useRecoilValue<boolean>(isRecordingState)
 	const setCursorPosition = useSetRecoilState<Cursor>(cursorState);
 	const setLoops = useSetRecoilState(loopsState);
-	
+	const threadID = useRecoilValue<string | null>(threadState);
+	const [selectedMidiLoop, setSelectedMidiLoop] = useRecoilState<MidiLoop | null>(selectedMidiLoopState);
+	const bpm = useRecoilValue<number>(bpmState);
+	const genre = useRecoilValue<"pop" | "metal" | "rock" | "blues" | "jazz">(genreState);
+	const inputTimbre = useRecoilValue<"acoustic guitar" | "piano" | "flute" | "violin" | "electric guitar">(inputTimbreState);
+	const outputTimbre = useRecoilValue<"acoustic guitar" | "piano" | "flute" | "violin" | "electric guitar">(outputTimbreState);
+	const [currentRunID, setRunID] = useRecoilState<string | null>(latestRunIDState);
+	const [loading, setLoading] = useState(false); // Track loading state
+	const [generatedMessage, setGeneratedMessage] = useState<string | null>(null); // Track generated message
+
+	useEffect(() => {
+		if (!isRecording && midiNotes.length > 0) {
+			const newLoop: MidiLoop = generateLoopFromMidiNotes(midiNotes);
+			setLoops((prevLoops) => {
+				const updatedLoops = [...prevLoops, newLoop];
+				console.log(`new loop added:`);
+				console.log(JSON.stringify(newLoop) + "\n");
+				console.log(`loops:`);
+				console.log(JSON.stringify(updatedLoops) + "\n");
+				return updatedLoops;
+			});
+			setSelectedMidiLoop(newLoop);	
+		}
+	}, [midiNotes, setLoops, isRecording])
 	
 	useEffect(() => {
-		if (midiNotes && midiNotes.length > 0) {
-			const newLoops: MidiLoop[] = generateLoopsFromMidiNotes(midiNotes);
-			setLoops(newLoops);
-			console.log(`loops updated:`);
-			newLoops.forEach((midiLoop) => {
-				console.log(JSON.stringify(midiLoop) + "\n");
+		console.log(`selectedMidiLoop: ${selectedMidiLoop}`)
+		console.log(`threadID: ${threadID}`)
+		if (selectedMidiLoop && threadID) {
+			const notes = selectedMidiLoop.notes.map(note => Tone.Frequency(note.note).toNote());
+			const detectedKey = detectKey(notes);
+			const payload: MidiRequestPayload = {
+      			inputMidi: selectedMidiLoop.notes,
+      			key: detectedKey!,
+      			bpm: bpm,
+      			genre: genre,
+      			inputTimbre: inputTimbre,
+      			outputTimbre: outputTimbre,
+    		}
+			
+			setLoading(true);
+			generateBaseLoop(threadID, payload, (status) => {
+				console.log(status);
+			  if (status !== "completed") {
+				console.log(`Current status: ${status}`);
+			  } else {
+				setLoading(false);
+			  }
 			})
-		}
-	}, [midiNotes, setLoops])
+			  .then((result) => {
+				if (result.success && result.message) {
+				  setGeneratedMessage(result.message);
+				  console.log('Generated base loop:', result.message);
+				  // Further processing of the generated message
+				  const parsedNotes = parseAssistantResponse(result.message);
+				  const generatedLoop: MidiLoop = {
+				    id: `generatedLoop_${Date.now()}`,
+					start: selectedMidiLoop.start,
+					end: selectedMidiLoop.end,
+					notes: parsedNotes
+				  }
+				  setApiGeneratedLoops(prevLoops => [...prevLoops, generatedLoop]);
+				} else {
+				  console.error("Generation failed:", result.message);
+				}
+			  })
+			  .catch(err => {
+				setLoading(false);
+				console.error("Error in generateBaseLoop:", err);
+			  });
 
-	const generateLoopsFromMidiNotes = (notes: Array<MidiNote>): MidiLoop[] => {
+			}
+	}, [selectedMidiLoop, threadID, bpm, genre, inputTimbre, outputTimbre])
+
+	useEffect(() => {
+	  console.log("Updated apiGeneratedLoops:", apiGeneratedLoops);
+	}, [apiGeneratedLoops]);
+
+	const generateLoopFromMidiNotes = (notes: Array<MidiNote>): MidiLoop => {
+		const firstNoteStart = Tone.Time(notes[0].start).toBarsBeatsSixteenths(); // Get the start time of the first note
+		const offset = Tone.Time(firstNoteStart).toSeconds(); // Calculate the offset in seconds
+
+  		const adjustedNotes = notes.map(note => ({
+    		...note,
+    		start: Tone.Time(Tone.Time(note.start).toSeconds() - offset).toBarsBeatsSixteenths()
+  		}));
 		const loop: MidiLoop = {
-			id: "loop1", 
-			start: notes[0].start, 
-			end: Tone.Time(Tone.Time(notes[notes.length - 1].start).toSeconds() + Tone.Time(notes[notes.length - 1].length).toSeconds()).toBarsBeatsSixteenths(), 
-			notes: notes};
-		return [loop];
+			id: `loop${loops.length}`, 
+			start: `${loops.length * 4}:0:0`, 
+			end: `${(loops.length + 1) * 4}:0:0`, 
+			notes: adjustedNotes};
+		
+		return loop;
 	}
 	const handlePlay = () => {
 		if (loops.length > 0) {
@@ -80,10 +161,21 @@ const Timeline: React.FC<TimelineProps> = ({width, height, numMeasures, numBeats
         		                ${i % 71 === 0 ? 'border-b border-black' : 'border-b border-gray-300'}`}
         		  ></div>
         		))}        
-				{/* Loops */}
-        		{loops.map(loop => (
-        		  <MidiBlock key={loop.id} loop={loop} />
-        		))}
+
+				{/* Recorded MIDI Track */}
+                <div className="track recorded-track">
+                    {loops.map(loop => (
+                        <MidiBlock key={loop.id} loop={loop} />
+                    ))}
+                </div>
+                
+                {/* API-Generated MIDI Track */}
+                <div className="track api-generated-track">
+                    {apiGeneratedLoops.map((loop, index) => (
+                        <MidiBlock key={`api-${index}`} loop={loop} />
+                    ))}
+                </div>
+
       			{/* Cursor */}
       			<Playhead position={cursor.position} isPlaying={isPlaying} />
     		</div>

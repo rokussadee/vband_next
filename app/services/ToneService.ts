@@ -25,9 +25,9 @@ export const playNote = (note: string) => {
     console.error('PolySynth not initialized. Call initializePolySynth first.');
     return;
   }
-  console.log(`play note: ${note}`);
+  //console.log(`play note: ${note}`);
   const now = Tone.now();
-  polySynth.triggerAttack(note, now, 40);
+  polySynth.triggerAttack(note, now, 10);
 };
 
 export const stopNote = (note: string) => {
@@ -35,7 +35,7 @@ export const stopNote = (note: string) => {
     console.error('PolySynth not initialized. Call initializePolySynth first.');
     return;
   }
-  console.log(`stop note: ${note}`)
+  //console.log(`stop note: ${note}`)
   // Trigger the release portion of the note, stopping it
   polySynth.triggerRelease(note, Tone.now() + .1);
 }
